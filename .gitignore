@@ -1,0 +1,11 @@
+data/
+venv/
+*.parquet
+*.csv
+extract.log
+nohup.out
+__pycache__/
+.DS_Store
+papers/
+pull.log
+horse_race_dbg.py
