@@ -52,8 +52,8 @@ The design was built to make a null informative rather than ambiguous:
 | `calibrate_noise.py`, `calibrate_ivol.py` | Quote-noise measurement-error model; dependent-variable unit resolution |
 | `rebuild_rv.py`, `rv_*.py` | Realised-variance construction and the diagnostics that selected close-to-close over corrupted range estimators |
 | `horse_race.py` | HAR-RV / +IV / +BKM / +entropy nested comparison: in-sample (Newey–West), out-of-sample expanding window, Clark–West, placebo |
-| `verify.py` … `verify3.py` | Independent re-implementation of the panel, look-ahead audit, ground-truth checks against known SPY returns, persistence-matched power analysis |
-| `verify4b.py` … `verify8.py` | Independent re-extraction of the entropy measure from raw chains under spline-free numerics (butterfly histograms + arbitrage-repair projection), with gated self-tests |
+| `verification/verify.py` … `verify3.py` | Independent re-implementation of the panel, look-ahead audit, ground-truth checks against known SPY returns, persistence-matched power analysis |
+| `verification/verify4b.py` … `verify8.py` | Independent re-extraction of the entropy measure from raw chains under spline-free numerics (butterfly histograms + arbitrage-repair projection), with gated self-tests |
 | `HANDOVER.md` | Running research log: defects, decisions, verification ledger |
 
 The verification suite is deliberately kept, failures included: attempts
