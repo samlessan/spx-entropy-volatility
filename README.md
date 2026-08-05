@@ -50,7 +50,8 @@ The design was built to make a null informative rather than ambiguous:
 | `audit_spx.py` | Data-quality audit of the raw chains |
 | `extract_entropy.py` | Breeden–Litzenberger extraction: smile smoothing, RND, Shannon entropy vs lognormal benchmark, BKM moments |
 | `calibrate_noise.py`, `calibrate_ivol.py` | Quote-noise measurement-error model; dependent-variable unit resolution |
-| `rebuild_rv.py`, `rv_*.py` | Realised-variance construction and the diagnostics that selected close-to-close over corrupted range estimators |
+| `rebuild_rv.py` | Realised-variance construction (close-to-close from the official session close) |
+| `rv_diagnostics/` | The diagnostics that selected close-to-close over corrupted range estimators, plus panel checks |
 | `horse_race.py` | HAR-RV / +IV / +BKM / +entropy nested comparison: in-sample (Newey–West), out-of-sample expanding window, Clark–West, placebo |
 | `verification/verify.py` … `verify3.py` | Independent re-implementation of the panel, look-ahead audit, ground-truth checks against known SPY returns, persistence-matched power analysis |
 | `verification/verify4b.py` … `verify8.py` | Independent re-extraction of the entropy measure from raw chains under spline-free numerics (butterfly histograms + arbitrage-repair projection), with gated self-tests |
