@@ -53,9 +53,7 @@ The design was built to make a null informative rather than ambiguous:
 | `rebuild_rv.py` | Realised-variance construction (close-to-close from the official session close) |
 | `rv_diagnostics/` | The diagnostics that selected close-to-close over corrupted range estimators, plus panel checks |
 | `horse_race.py` | HAR-RV / +IV / +BKM / +entropy nested comparison: in-sample (Newey–West), out-of-sample expanding window, Clark–West, placebo |
-| `verification/verify.py` … `verify3.py` | Independent re-implementation of the panel, look-ahead audit, ground-truth checks against known SPY returns, persistence-matched power analysis |
-| `verification/verify4b.py` … `verify8.py` | Independent re-extraction of the entropy measure from raw chains under spline-free numerics (butterfly histograms + arbitrage-repair projection), with gated self-tests |
-| `HANDOVER.md` | Running research log: defects, decisions, verification ledger |
+| `verification/` | Independent checks written separately from the pipeline: panel replication, look-ahead audit, ground-truth tests against known SPY returns, persistence-matched power analysis, and a spline-free re-extraction of the entropy measure from raw chains |
 
 The verification suite is deliberately kept, failures included: attempts
 4b–6 document quantitatively why unregularised density extraction fails
