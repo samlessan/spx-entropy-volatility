@@ -1,7 +1,7 @@
 # Does the entropy of the option-implied density forecast volatility?
 
 Research code for a URSS-funded summer project (University of Warwick /
-Warwick Business School, supervised by Dr Arie Gozluklu): does the Shannon
+Warwick Business School, supervised by Prof Arie Gozluklu): does the Shannon
 entropy of the S&P 500 risk-neutral density — extracted from SPX option
 chains via Breeden–Litzenberger (1978) — forecast realised volatility
 beyond implied volatility and the model-free implied moments?
@@ -69,7 +69,7 @@ entropy measure ordinally (Spearman 0.65 post-2018).
 Raw inputs are **OptionMetrics IvyDB and WRDS Intraday Indicators under
 institutional licence and are not distributed** — the `data/` tree is
 excluded. With WRDS access, `pull_spx.py` rebuilds it; without, the
-synthetic harness in the `verify*` scripts exercises the full extraction
+synthetic harness in the verification scripts exercises the full extraction
 and testing machinery on generated chains with known answers.
 
 ```
