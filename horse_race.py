@@ -24,9 +24,6 @@ DESIGN -- fixed in advance:
     the nested comparison. Overlapping horizons -> Newey-West lags = 21 for
     any in-sample t-stats.
 
-Nested models are compared with Clark-West, not Diebold-Mariano: under the
-null the larger model's extra parameters are pure noise, which biases DM
-toward the small model.
 """
 
 import glob
@@ -101,7 +98,7 @@ MODELS = {
 
 
 def qlike(actual_var, pred_var):
-    """Patton (2011) QLIKE. Robust to noise in the volatility proxy."""
+    """Patton (2011) QLIKE."""
     r = actual_var / pred_var
     return float(np.mean(r - np.log(r) - 1))
 
@@ -138,12 +135,9 @@ for name, cols in MODELS.items():
             tr = d[d.index < t]
             if len(tr) > 200:
                 if "xh_o" in cols:
-                    # Re-fit the projection of xh on the controls using ONLY
-                    # data available at t, so the regressor carries no
-                    # information from the forecast period.
-                    # Explicit design matrix: sm.add_constant SKIPS adding an
-                    # intercept when any column is already constant, which
-                    # would silently desync fit and predict.
+                        # train-only projection: no look-ahead
+                        # explicit intercept: add_constant skips it
+                        # if a column is already constant
                     A = np.column_stack([np.ones(len(tr)),
                                          tr[ocols].values.astype(float)])
                     orth = np.linalg.lstsq(A, tr.xh.values, rcond=None)[0]
@@ -186,7 +180,6 @@ for name in MODELS:
 def clark_west(y, p_small, p_large):
     """
     Clark & West (2007) MSPE-adjusted statistic for NESTED models.
-    Positive, significant -> the larger model genuinely helps.
     """
     e1 = (y - p_small) ** 2
     e2 = (y - p_large) ** 2
@@ -199,7 +192,6 @@ def clark_west(y, p_small, p_large):
 
 # ------------------------------------------------------------- placebo --
 # Sanity: replace xh with white noise of the same sd and re-run the final
-# comparison. If the placebo is significant, the test procedure is broken.
 rngp = np.random.default_rng(12345)
 dp = d.copy()
 dp["xh"] = dp.xh.mean() + rngp.normal(0, d.xh.std(), len(dp))
@@ -232,10 +224,3 @@ stp, tp = clark_west(act.values, res["HAR+IV+BKM"]["pred"].values,
                      pp[valid].values)
 print(f"  {'PLACEBO (noise)':14s} -> {'HAR+IV+BKM+noise':16s} "
       f"CW={stp:+.5f}  t={tp:+.2f}")
-print("  ^ placebo must NOT be significant; if it is, the test is broken")
-
-print("\n" + "=" * 74)
-print("The line that matters: HAR+IV+BKM -> HAR+IV+BKM+XH.")
-print("t > 1.645 means excess entropy adds out-of-sample forecasting power")
-print("beyond implied vol and the model-free moments. Anything else is a null,")
-print("and a null gets written up as a null.")

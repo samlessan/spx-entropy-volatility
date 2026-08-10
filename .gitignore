@@ -11,3 +11,7 @@ pull.log
 horse_race_dbg.py
 HANDOVER.md
 podcast_briefing.md
+*.bak
+clean_comments.py
+clean_repo.py
+results_*.txt
