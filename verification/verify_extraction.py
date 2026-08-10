@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """INDEPENDENT VERIFICATION OF xh, attempt 3d -- noise-aware calibration, precision-propagated.
 
-    cd ~/urss && source venv/bin/activate && python verify7.py
+    cd ~/urss && source venv/bin/activate && python verification/verify_extraction.py
 
-WHAT verify6 ESTABLISHED
+What the previous extraction attempt established
   PAVA cut noise drift 15-70x. Clean bias < 0.008 everywhere. One failing
   cell: tv=0.034 at realistic noise, drift -0.044 (sd 0.017). Cause is a
   scaling law, not a bug: per-bin signal p ~ q h ~ 0.08 is vol-invariant,
@@ -13,7 +13,7 @@ WHAT verify6 ESTABLISHED
   regimes are intrinsically hard -- the same physics behind the pipeline's
   2015-17 BKM blowups and the pre-patch xh=-12.8 crashes at 8% IV.
 
-WHAT CHANGES HERE
+What changes here
   The per-pair calibration now subtracts the MEAN xh of NOISY synthetic
   Black-Scholes chains -- noise at the pair's own recorded half_spread,
   through the identical PAVA path, averaged over B replications -- rather

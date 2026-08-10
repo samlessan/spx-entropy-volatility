@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Persistence-adjusted power curve. The last number.
 
-    cd ~/urss && source venv/bin/activate && python verify3.py
+    cd ~/urss && source venv/bin/activate && python verification/verify_power.py
 
-verify2.py planted an iid signal. xh_o is persistent, and with 21-day
+verify_rv_sensitivity.py planted an iid signal. xh_o is persistent, and with 21-day
 overlapping horizons a persistent regressor has fewer effective independent
 observations, so true power is lower. This measures xh_o's autocorrelation
 and re-runs the power curve with a planted signal matched to it.

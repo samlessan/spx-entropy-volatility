@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Two fixes to verify.py, then the final numbers.
+"""Two fixes to verify_panel.py, then the final numbers.
 
-    cd ~/urss && source venv/bin/activate && python verify2.py
+    cd ~/urss && source venv/bin/activate && python verification/verify_rv_sensitivity.py
 
 FIX 1  zero-return days. rv = r^2 is exactly 0 when SPY closes unchanged.
        log(clip(1e-12)) = -27.6 against a typical -9.8, so those days enter
        HAR as extreme outliers. Quantify, then floor sensibly and re-test.
 
-FIX 2  power curve with replications. verify.py used ONE draw per effect
+FIX 2  power curve with replications. verify_panel.py used ONE draw per effect
        size, giving non-monotonic t-stats and an unreliable MDE. Use 40
        draws per size and report the detection RATE, which is actual power.
 """

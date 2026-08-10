@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """INDEPENDENT VERIFICATION of the excess-entropy null.
 
-    cd ~/urss && source venv/bin/activate && python verify.py
+    cd ~/urss && source venv/bin/activate && python verification/verify_panel.py
 
 Reads ONLY data files. Does not import horse_race.py, calibrate_ivol.py, or
 any project module. HAR, orthogonalisation and Clark-West are reimplemented

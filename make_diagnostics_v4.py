@@ -2,7 +2,7 @@
 """
 Diagnostic page for the supervisor meeting, v4.
 
-    python make_diagnostics.py
+    python make_diagnostics_v4.py
 
 The substantive change from v1: the endogeneity claim is now *tested* rather
 than asserted. Annual aggregation confounds the strong secular rise in strike
