@@ -14,7 +14,7 @@ moments. A Monte Carlo with the planted regressor's persistence matched to
 the entropy series (AR(1) = 0.58) shows the test has **80% power against an
 incremental R² of 0.02**, so an effect of ~2% of forecast variance would
 have been detected with 80% probability. For scale, implied volatility's own
-out-of-sample contribution is 0.147. The null is robust across horizons of
+out-of-sample contribution is 0.131. The null is robust across horizons of
 5 to 63 trading days.
 
 A secondary result: once ATM implied volatility is in the model, the BKM
@@ -31,15 +31,15 @@ Three checks were built in before the main test was run:
   large literature since). Any run failing that gate is treated as a
   pipeline defect, not evidence.
     - **The gate caught five real defects** before any result was written up,
-      including an unsorted input bug in the IV interpolation, a dependent
+      including an unsorted-input bug in the IV interpolation, a dependent
       variable built from the wrong WRDS field, and price columns that turned
       out to be flags. Each fix was validated by re-running the gate
       (final: CW t = +4.89).
 - **A placebo regressor** (pure noise through the identical machinery)
   must come back insignificant on every run (|t| < 0.5), which it does.
 - **A synthetic harness** validates the Breeden–Litzenberger extraction
-  against densities with closed-form entropy, and its measurement error
-  model predicted the real data spread coefficient out of sample to 4%
+  against densities with closed-form entropy, and its measurement-error
+  model predicted the real-data spread coefficient out of sample to 4%
   (0.0237 predicted vs 0.0227 realised per log unit of half-spread).
 
 ## Repository map
@@ -49,17 +49,19 @@ Three checks were built in before the main test was run:
 | `pull_spx.py` | Pulls SPX chains, forwards, zero curve from WRDS/OptionMetrics |
 | `audit_spx.py` | Data-quality audit of the raw chains |
 | `extract_entropy.py` | Breeden–Litzenberger extraction: smile smoothing, RND, Shannon entropy vs lognormal benchmark, BKM moments |
-| `calibrate_noise.py`, `calibrate_ivol.py` | Quote-noise measurement-error model; dependent variable unit resolution |
+| `calibrate_noise.py`, `calibrate_ivol.py` | Quote-noise measurement-error model; dependent-variable unit resolution |
 | `rebuild_rv.py` | Realised variance construction (close-to-close from the official session close) |
 | `rv_diagnostics/` | The diagnostics that selected close-to-close over corrupted range estimators, plus panel checks |
 | `strike_density_diagnostics.pdf` | Strike density and coverage of the SPX chain, 1996–2025; why the primary sample starts in 2015 |
+| `check_orth.py` | Conditioning check on the out-of-sample orthogonalisation design matrix: whether the least-squares solve is degenerate in the early expanding windows |
+| `make_diagnostics_v4.py` | Builds the strike-density diagnostic page, including the within-year test of whether higher-IV dates have worse coverage in sigma units |
 | `horse_race.py` | HAR-RV / +IV / +BKM / +entropy nested comparison: in-sample (Newey–West), out-of-sample expanding window, Clark–West, placebo |
 | `verification/` | Independent checks written separately from the pipeline: panel replication, look-ahead audit, ground truth tests against known SPY returns, persistence-matched power analysis, and a second, independent re-extraction of the entropy measure from the raw option chains |
 
 ## Data
 
 Raw inputs are **OptionMetrics IvyDB and WRDS Intraday Indicators under
-institutional licence and are not distributed**, the `data/` tree is
+institutional licence and are not distributed**; the `data/` tree is
 excluded. With WRDS access, `pull_spx.py` rebuilds it; without, the
 synthetic harness in the verification scripts exercises the full extraction
 and testing machinery on generated chains with known answers.
