@@ -1,14 +1,14 @@
 # Does the entropy of the option-implied density forecast volatility?
 
-Research code for a URSS funded summer project (University of Warwick /
+Research code for a URSS-funded summer project (University of Warwick /
 Warwick Business School, supervised by Prof Arie Gozluklu): does the Shannon
-entropy of the S&P 500 risk neutral density, extracted from SPX option
+entropy of the S&P 500 risk-neutral density, extracted from SPX option
 chains via Breeden–Litzenberger (1978), forecast realised volatility
 beyond implied volatility and the model-free implied moments?
 
 **Answer: no, and the null is quantified.** Orthogonalised excess entropy
 contributes an incremental out-of-sample R² of **+0.0008** (Clark–West
-t = −0.17, n = 2,369, 2018–2025) to 21 day realised variance forecasts
+t = −0.17, n = 2,369, 2018–2025) to 21-day realised variance forecasts
 beyond HAR-RV, ATM implied volatility and the Bakshi–Kapadia–Madan
 moments. A Monte Carlo with the planted regressor's persistence matched to
 the entropy series (AR(1) = 0.58) shows the test has **80% power against an
@@ -36,7 +36,7 @@ Three checks were built in before the main test was run:
       out to be flags. Each fix was validated by re-running the gate
       (final: CW t = +4.89).
 - **A placebo regressor** (pure noise through the identical machinery)
-  must come back insignificant on every run. It does (t = +0.23).
+  must come back insignificant on every run (|t| < 0.5), which it does.
 - **A synthetic harness** validates the Breeden–Litzenberger extraction
   against densities with closed-form entropy, and its measurement error
   model predicted the real data spread coefficient out of sample to 4%
@@ -47,9 +47,9 @@ Three checks were built in before the main test was run:
 | File | Role |
 |---|---|
 | `pull_spx.py` | Pulls SPX chains, forwards, zero curve from WRDS/OptionMetrics |
-| `audit_spx.py` | Data quality audit of the raw chains |
+| `audit_spx.py` | Data-quality audit of the raw chains |
 | `extract_entropy.py` | Breeden–Litzenberger extraction: smile smoothing, RND, Shannon entropy vs lognormal benchmark, BKM moments |
-| `calibrate_noise.py`, `calibrate_ivol.py` | Quote noise measurement error model; dependent variable unit resolution |
+| `calibrate_noise.py`, `calibrate_ivol.py` | Quote-noise measurement-error model; dependent variable unit resolution |
 | `rebuild_rv.py` | Realised variance construction (close-to-close from the official session close) |
 | `rv_diagnostics/` | The diagnostics that selected close-to-close over corrupted range estimators, plus panel checks |
 | `strike_density_diagnostics.pdf` | Strike density and coverage of the SPX chain, 1996–2025; why the primary sample starts in 2015 |
