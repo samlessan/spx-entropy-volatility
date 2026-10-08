@@ -20,6 +20,11 @@ DESIGN DECISIONS -- fixed in advance, do not tune:
     probability share is recorded as `tail_share` for robustness splits.
   * OTM only: puts below the forward, calls above. ITM quotes are near
     intrinsic and their time value is swamped by the spread.
+  * Strike selection follows the Cboe VIX/SKEW rule: quotes with a zero bid
+    are dropped, and each wing stops after two consecutive zero bids moving
+    away from the forward. Without it, a deep OTM quote of 0 bid / 0.10 ask
+    enters at a mid of 0.05 and inflates the tails: on affected dates XH fell
+    to -0.95 and BKM kurtosis exceeded 500 (October 2026 audit).
 
 OUTPUTS per date-expiry:
   h            entropy of the fitted RND (nats, over price/forward)
@@ -195,9 +200,30 @@ def bkm_moments(m_otm, price_otm, is_call, T, r=0.0):
 
 
 # ------------------------------------------------------------------ chain --
+def cboe_filter(g, fwd):
+    """Cboe VIX/SKEW strike selection on the OTM wings: drop zero-bid quotes,
+    and stop each wing after two consecutive zero bids, moving outward from
+    the forward."""
+    keep = []
+    for side, asc, sel in (("P", False, g.strike < fwd),
+                           ("C", True, g.strike >= fwd)):
+        s = g[(g.cp_flag == side) & sel].sort_values("strike", ascending=asc)
+        zeros = 0
+        for idx, b in zip(s.index, s.best_bid.values):
+            if b <= 0:
+                zeros += 1
+                if zeros >= 2:
+                    break
+                continue
+            zeros = 0
+            keep.append(idx)
+    return g.loc[keep]
+
+
 def process_chain(g, fwd, T):
     """One (date, exdate). Returns a dict of measures or None."""
     g = g[g.best_offer > g.best_bid].copy()
+    g = cboe_filter(g, fwd)
     g["mid"] = 0.5 * (g.best_bid + g.best_offer)
     g["m"] = g.strike / fwd
     g = g[(g.m > 0.4) & (g.m < 1.6) & (g.mid > 0.05)]

@@ -41,6 +41,7 @@ embargo. It is kept so the effect of both corrections can be reported.
 
 import glob
 import json
+import os
 import sys
 
 import numpy as np
@@ -51,10 +52,12 @@ H = 21                       # forecast horizon, trading days
 TARGET_DTE = 30
 OOS_START = "2018-01-01"
 PUBLISHED = len(sys.argv) > 1 and sys.argv[1] == "published"
+# entropy files: data/ by default; ENT_DIR=data/v1_entropy for the pre-filter set
+ENT_DIR = os.environ.get("ENT_DIR", "data")
 EMBARGO = 0 if PUBLISHED else H
 
 # ------------------------------------------------------------------ load --
-ent = pd.concat([pd.read_csv(f) for f in sorted(glob.glob("data/entropy_*.csv"))])
+ent = pd.concat([pd.read_csv(f) for f in sorted(glob.glob(f"{ENT_DIR}/entropy_*.csv"))])
 ent["date"] = pd.to_datetime(ent.date)
 ent = ent.dropna(subset=["xh", "atm_iv", "half_spread", "bkm_skew", "bkm_kurt"])
 
@@ -271,7 +274,7 @@ out = {
     "cw_t": cwt, "placebo_t": tp,
     "excl_2020": {"n": int(ex.sum()), "iv_t": t_iv_ex, "xh_t": t_xh_ex},
 }
-fn = "results_published.json" if PUBLISHED else "results.json"
+fn = os.environ.get("RESULTS", "results_published.json" if PUBLISHED else "results.json")
 with open(fn, "w") as f:
     json.dump(out, f, indent=2)
 print(f"\nwrote {fn}")
