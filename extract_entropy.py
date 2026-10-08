@@ -24,7 +24,9 @@ DESIGN DECISIONS -- fixed in advance, do not tune:
 OUTPUTS per date-expiry:
   h            entropy of the fitted RND (nats, over price/forward)
   h_ln         entropy of the variance-matched lognormal
-  xh           EXCESS ENTROPY = h - h_ln   (<= 0 by construction)
+  xh           EXCESS ENTROPY = h - h_ln   (negative on every date in the
+               2015-2025 sample; not bounded by construction, because the
+               lognormal is matched on the mean and variance of K/F)
   bkm_vol/skew/kurt   Bakshi-Kapadia-Madan (2003) model-free moments
   atm_iv       implied vol at the forward
   half_spread  median near-the-money half-spread / forward  (noise proxy)

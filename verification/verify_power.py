@@ -7,13 +7,20 @@ verify_rv_sensitivity.py planted an iid signal. xh_o is persistent, and with 21-
 overlapping horizons a persistent regressor has fewer effective independent
 observations, so true power is lower. This measures xh_o's autocorrelation
 and re-runs the power curve with a planted signal matched to it.
+
+Every out-of-sample fit uses a 21-row embargo: training rows whose 21-day
+targets overlap the test month are dropped. 200 replications per effect size;
+power is reported with its binomial standard error. The planted effect is
+reported in two units: its share of the residual variance after HAR+IV+BKM
+(the design parameter) and the out-of-sample incremental R2 it actually
+achieves (the same units as the headline table).
 """
 import glob
 
 import numpy as np
 import pandas as pd
 
-H, NREP = 21, 40
+H, NREP = 21, 200
 rng = np.random.default_rng(7)
 
 rvf = pd.read_csv("data/spy_rv.csv")
@@ -69,21 +76,33 @@ def nw_t(f, lags=21):
 
 
 def oos_t(cs, cb, panel, start="2018-01-01"):
+    """Clark-West t and OOS incremental R2 of cb over cs.
+
+    Expanding window, refit monthly, 21-row embargo: at the first date of a
+    test month the training set is every earlier row except the last H, whose
+    21-day targets overlap the test month. Panel must be sorted by date.
+    """
     idx = panel.index
-    dates = idx[idx >= pd.Timestamp(start)]
-    per = pd.Series(dates).dt.to_period("M")
-    out = []
-    for mo in per.unique():
-        te = dates[per.values == mo]
-        tr = panel.loc[idx < te[0]]
-        if len(tr) < 250:
+    y = panel.y.values.astype(float)
+    Xs = np.column_stack([np.ones(len(panel)), panel[cs].values.astype(float)])
+    Xb = np.column_stack([np.ones(len(panel)), panel[cb].values.astype(float)])
+    pos = np.flatnonzero(idx >= pd.Timestamp(start))
+    per = idx[pos].to_period("M").asi8
+    ys, p1, p2 = [], [], []
+    for mo in np.unique(per):
+        te = pos[per == mo]
+        ntr = te[0] - H                 # rows 0 .. te[0]-1, minus the embargo
+        if ntr < 250:
             continue
-        te = panel.loc[te]
-        b1, b2 = ols(tr[cs], tr.y), ols(tr[cb], tr.y)
-        y1, y2 = pred(b1, te[cs]), pred(b2, te[cb])
-        out.extend((yv - a) ** 2 - ((yv - bb) ** 2 - (a - bb) ** 2)
-                   for yv, a, bb in zip(te.y.values, y1, y2))
-    return nw_t(out)
+        b1 = np.linalg.lstsq(Xs[:ntr], y[:ntr], rcond=None)[0]
+        b2 = np.linalg.lstsq(Xb[:ntr], y[:ntr], rcond=None)[0]
+        ys.append(y[te])
+        p1.append(Xs[te] @ b1)
+        p2.append(Xb[te] @ b2)
+    yy, a, b = np.concatenate(ys), np.concatenate(p1), np.concatenate(p2)
+    f = (yy - a) ** 2 - ((yy - b) ** 2 - (a - b) ** 2)
+    inc = (np.mean((yy - a) ** 2) - np.mean((yy - b) ** 2)) / np.var(yy)
+    return nw_t(f), inc, len(yy)
 
 
 def orth_oos(panel, col="xh"):
@@ -123,10 +142,15 @@ resid = p.y.values - pred(b0, p[BASE])
 rs = (resid - resid.mean()) / resid.std()
 n = len(p)
 
-print(f"\n{'planted R2':>11s} {'mean t':>8s} {'sd t':>7s} {'power':>7s}")
-power = {}
-for target in [0.000, 0.002, 0.005, 0.010, 0.020, 0.050]:
-    ts = []
+base_r2 = 1 - resid.var() / p.y.values.var()
+print(f"in-sample R2 of HAR+IV+BKM = {base_r2:.4f}; a planted share k of the "
+      f"residual variance is ~{1 - base_r2:.2f}k of total variance\n")
+print(f"{'planted k':>10s} {'mean t':>7s} {'power':>6s} {'+/- se':>7s} "
+      f"{'OOS incR2':>10s} {'IS incR2':>9s}")
+GRID = [0.000, 0.005, 0.010, 0.0125, 0.015, 0.0175, 0.020, 0.025, 0.030, 0.040, 0.050]
+power, oos_inc = {}, {}
+for target in GRID:
+    ts, incs, iss = [], [], []
     for _ in range(NREP):
         # AR(1) noise matched to xh_o's persistence
         e = rng.standard_normal(n)
@@ -140,10 +164,19 @@ for target in [0.000, 0.002, 0.005, 0.010, 0.020, 0.050]:
                                    min_periods=1).mean().values
         rp = (rp - rp.mean()) / rp.std()
         sig = np.sqrt(target) * rp + np.sqrt(max(1 - target, 0)) * z
-        ts.append(oos_t(BASE, BASE + ["plant"], p.assign(plant=sig)))
+        pa = p.assign(plant=sig)
+        t, inc, _ = oos_t(BASE, BASE + ["plant"], pa)
+        ts.append(t)
+        incs.append(inc)
+        bb = ols(pa[BASE + ["plant"]], pa.y)
+        iss.append((1 - (pa.y.values - pred(bb, pa[BASE + ["plant"]])).var()
+                    / pa.y.values.var()) - base_r2)
     ts = np.array(ts)
-    power[target] = (ts > 1.645).mean()
-    print(f"{target:11.3f} {ts.mean():+8.2f} {ts.std():7.2f} {power[target]:7.2f}")
+    pw = (ts > 1.645).mean()
+    power[target], oos_inc[target] = pw, float(np.mean(incs))
+    print(f"{target:10.4f} {ts.mean():+7.2f} {pw:6.2f} "
+          f"{np.sqrt(pw * (1 - pw) / NREP):7.3f} {np.mean(incs):+10.4f} "
+          f"{np.mean(iss):+9.4f}")
 
 m80 = next((k for k, val in power.items() if val >= 0.80), None)
 m50 = next((k for k, val in power.items() if val >= 0.50), None)
@@ -152,19 +185,26 @@ b = ols(q[BASE], q.y)
 e0 = q.y.values - pred(b, q[BASE])
 b = ols(q[BASE + ["xh_o"]], q.y)
 e1 = q.y.values - pred(b, q[BASE + ["xh_o"]])
-obs = (1 - e1.var() / q.y.values.var()) - (1 - e0.var() / q.y.values.var())
-tobs = oos_t(BASE, BASE + ["xh_o"], q)
+obs_is = (1 - e1.var() / q.y.values.var()) - (1 - e0.var() / q.y.values.var())
+tobs, obs_oos, n_oos = oos_t(BASE, BASE + ["xh_o"], q)
+HAR_IV = HAR + ["liv"]
+t_iv, iv_oos, _ = oos_t(HAR, HAR_IV, p)
+b = ols(p[HAR], p.y)
+r2h = 1 - (p.y.values - pred(b, p[HAR])).var() / p.y.values.var()
+b = ols(p[HAR_IV], p.y)
+r2hi = 1 - (p.y.values - pred(b, p[HAR_IV])).var() / p.y.values.var()
 
 print("\n" + "=" * 62)
 print("NUMBERS FOR THE REPORT")
 print("=" * 62)
-print(f"  n (out-of-sample panel)              : {len(q)}")
-print(f"  observed incremental R2 of xh_o      : {obs:+.5f}")
-print(f"  observed Clark-West t                : {tobs:+.2f}")
-print(f"  size at true zero (should be <= 0.10): {power[0.000]:.2f}")
-print(f"  MDE at 50% power                     : {m50}")
-print(f"  MDE at 80% power                     : {m80}")
-print(f"  IV's own incremental R2              : +0.13060")
-if m80:
-    print(f"\n  ratio: the 80%-power threshold is {m80 / max(obs, 1e-9):.0f}x "
-          f"the observed effect")
+print(f"  rows after 250-row burn-in            : {len(q)}  (from {q.index.min().date()})")
+print(f"  out-of-sample n (2018 onwards)        : {n_oos}")
+print(f"  OOS incremental R2 of xh_o            : {obs_oos:+.5f}")
+print(f"  IN-SAMPLE incremental R2 of xh_o      : {obs_is:+.5f}")
+print(f"  observed Clark-West t                 : {tobs:+.2f}")
+print(f"  IV: OOS incremental R2 {iv_oos:+.4f} (t {t_iv:+.2f}), "
+      f"in-sample {r2hi - r2h:+.4f}")
+print(f"  rejection rate at true zero (size)    : {power[0.000]:.3f}")
+print(f"  planted k at 50% power                : {m50}")
+print(f"  planted k at 80% power                : {m80}"
+      + (f"  (= OOS incremental R2 of {oos_inc[m80]:+.4f})" if m80 else ""))

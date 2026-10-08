@@ -15,6 +15,12 @@ BLOCK D  independent replication -- does the null reproduce?
 BLOCK E  horizon robustness      -- is the null specific to H=21?
 
 Block C is the one that matters most. A null with no power is not evidence.
+(Block C uses one draw per effect size; verify_power.py is the authoritative
+power curve.)
+
+rv is floored at the 0.5th percentile of its positive values before logs, and
+every out-of-sample fit drops the last h training rows (embargo), because
+their h-day targets overlap the test month. HAC lags are max(h, 21).
 """
 import numpy as np
 import pandas as pd
@@ -105,7 +111,9 @@ check("forward-RV construction has no look-ahead",
       f"n={len(both)}, max diff {np.abs(both.mine - both.proj).max():.2e}")
 
 # explicit: y at date t must be independent of rv at t
-lag0 = np.corrcoef(np.log(rv[both.index]), np.log(both.mine))[0, 1]
+# rv is exactly 0 on unchanged-close days, so floor it before taking logs
+lag0 = np.corrcoef(np.log(rv[both.index].clip(lower=rv[rv > 0].quantile(0.005))),
+                   np.log(both.mine))[0, 1]
 print(f"  corr(log rv_t, log y_t) = {lag0:.3f}  "
       f"(should be moderate ~0.3-0.5 from persistence, NOT ~1.0)")
 check("y is not contemporaneous rv", lag0 < 0.75, f"{lag0:.3f}")
@@ -121,7 +129,8 @@ ent["gap"] = (ent.dte - 30).abs()
 ent = (ent.sort_values(["date", "gap"]).drop_duplicates("date")
           .set_index("date").sort_index())
 
-lrv = np.log(rv.clip(lower=1e-12))
+FLOOR = rv[rv > 0].quantile(0.005)
+lrv = np.log(rv.clip(lower=FLOOR))
 p = pd.DataFrame({
     "y": np.log(fwd.clip(lower=1e-12)),
     "har_d": lrv,
@@ -159,7 +168,7 @@ def nw_t(f, lags=21):
     return m / np.sqrt(max(g, 1e-30) / n)
 
 
-def oos(cols_small, cols_big, panel, start="2018-01-01"):
+def oos(cols_small, cols_big, panel, start="2018-01-01", h=21):
     """Expanding window, refit monthly. Returns (CW mean, CW t)."""
     idx = panel.index
     dates = idx[idx >= pd.Timestamp(start)]
@@ -167,7 +176,7 @@ def oos(cols_small, cols_big, panel, start="2018-01-01"):
     rows = []
     for mo in months:
         te = dates[pd.Series(dates).dt.to_period("M").values == mo]
-        tr = panel.loc[idx < te[0]]
+        tr = panel.loc[idx < te[0]].iloc[:-h]
         if len(tr) < 250:
             continue
         te = panel.loc[te]
@@ -179,7 +188,8 @@ def oos(cols_small, cols_big, panel, start="2018-01-01"):
             rows.append(((yv - a) ** 2 - ((yv - bb) ** 2 - (a - bb) ** 2),
                          (yv - a) ** 2, (yv - bb) ** 2))
     a = np.array(rows)
-    return a[:, 0].mean(), nw_t(a[:, 0]), a[:, 1].mean(), a[:, 2].mean()
+    return (a[:, 0].mean(), nw_t(a[:, 0], lags=max(h, 21)),
+            a[:, 1].mean(), a[:, 2].mean())
 
 
 def orthogonalise_oos(panel, target="xh", start="2018-01-01"):
@@ -260,7 +270,7 @@ e0 = q.y.values - pred(b, q[HAR + ["liv", "bkm_skew", "bkm_kurt"]])
 b = ols(q[HAR + ["liv", "bkm_skew", "bkm_kurt", "xh_o"]], q.y)
 e1 = q.y.values - pred(b, q[HAR + ["liv", "bkm_skew", "bkm_kurt", "xh_o"]])
 r2_inc = (1 - e1.var() / q.y.values.var()) - (1 - e0.var() / q.y.values.var())
-print(f"  incremental R2 from xh_o = {r2_inc:+.5f}")
+print(f"  IN-SAMPLE incremental R2 from xh_o = {r2_inc:+.5f}")
 
 print("\nClark-West, out-of-sample (my own implementation):")
 tests = [
@@ -300,8 +310,8 @@ for h in [5, 10, 21, 42, 63]:
         np.log(f2.clip(lower=1e-12)).rename("y"), how="inner").dropna()
     pp["xh_o"] = orthogonalise_oos(pp, "xh")
     qq = pp.dropna(subset=["xh_o"])
-    _, tiv, _, _ = oos(HAR, HAR + ["liv"], pp)
-    _, txh, _, _ = oos(base, base + ["xh_o"], qq)
+    _, tiv, _, _ = oos(HAR, HAR + ["liv"], pp, h=h)
+    _, txh, _, _ = oos(base, base + ["xh_o"], qq, h=h)
     print(f"{h:4d} {len(qq):6d} {tiv:+10.2f} {txh:+8.2f}   "
           f"{'SIGNAL' if txh > 1.645 else 'null'}")
 

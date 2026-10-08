@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Two fixes to verify_panel.py, then the final numbers.
+(Out-of-sample fits use a 21-row embargo; see horse_race.py.)
 
     cd ~/urss && source venv/bin/activate && python verification/verify_rv_sensitivity.py
 
@@ -103,7 +104,7 @@ def oos_t(cs, cb, panel, start="2018-01-01"):
     out = []
     for mo in per.unique():
         te = dates[per.values == mo]
-        tr = panel.loc[idx < te[0]]
+        tr = panel.loc[idx < te[0]].iloc[:-H]
         if len(tr) < 250:
             continue
         te = panel.loc[te]
@@ -148,6 +149,8 @@ p, q = panels["0.5 pctile"]
 # --------------------------------------------------------------- power --
 print("\n" + "=" * 66)
 print(f"FIX 2 -- POWER CURVE, {NREP} replications per effect size")
+print("(iid planted signal: optimistic. verify_power.py matches the regressor's")
+print(" persistence and is the power curve of record.)")
 print("=" * 66)
 b0 = ols(p[BASE], p.y)
 resid = p.y.values - pred(b0, p[BASE])
@@ -183,7 +186,7 @@ _, txh = oos_t(BASE, BASE + ["xh_o"], q)
 print("\n" + "=" * 66)
 print("FINAL")
 print("=" * 66)
-print(f"observed incremental R2 from orthogonalised entropy : {obs:+.5f}")
+print(f"IN-SAMPLE incremental R2 of orthogonalised entropy : {obs:+.5f}")
 print(f"observed Clark-West t                              : {txh:+.2f}")
 print(f"false-positive rate at true zero                   : {power[0.000]:.2f}"
       f"   (should be ~0.05-0.10)")
@@ -191,14 +194,3 @@ print(f"effect size detectable with 50% power              : "
       f"{mde50 if mde50 else 'none tested'}")
 print(f"effect size detectable with 80% power              : "
       f"{mde80 if mde80 else 'none tested'}")
-print(f"\nfor scale: IV's own incremental R2 is +0.1306, i.e. "
-      f"{0.1306 / max(abs(obs), 1e-9):.0f}x the entropy effect")
-print("""
-HOW TO STATE THIS IN THE WRITE-UP
-  Not "entropy has no predictive power" -- that overclaims.
-  Instead: "the orthogonalised excess entropy of the risk-neutral density
-  contributes an incremental out-of-sample R2 of X, statistically
-  indistinguishable from zero, in a test with 80% power to detect an
-  incremental R2 of Y. Effects larger than Y can be ruled out; effects
-  smaller than Y cannot be distinguished from zero with this sample."
-""")
