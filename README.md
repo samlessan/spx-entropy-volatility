@@ -25,10 +25,10 @@ width of the distribution, its shape adds nothing.
 
 ## Why a null result is worth publishing code for
 
-Three checks were built in before the main test was run:
+Three checks guard the result:
 
-- **A pre-committed calibration gate.** Before reading the entropy
-  coefficient, the pipeline must reproduce a known result: implied
+- **A calibration gate.** Before any entropy result is accepted, the
+  pipeline must reproduce a known result: implied
   volatility beating HAR-RV out of sample (Christensen–Prabhala and a
   large literature since). Any run failing that gate is treated as a
   pipeline defect, not evidence.
@@ -54,8 +54,8 @@ all expiries (`verification/verify_bkm.py`).
 
 ## Corrections (October 2026)
 
-An independent audit of this repository before write-up found three further
-defects and three mislabelled statistics. All are fixed in the current code.
+A fresh review of this repository before write-up, carried out with an AI
+assistant, found the problems below. All are fixed in the current code.
 
 | Issue | Effect | Fix |
 |---|---|---|
@@ -74,6 +74,15 @@ The August 2026 table is reproduced exactly by
 | August 2026 (pre-filter, no embargo, floor 10⁻¹²) | −0.22 | −0.001 |
 | Pre-filter extraction, embargo and floor | −1.63 | −0.003 |
 | **Current (zero-bid filter, embargo, floor)** | **−1.76** | **−0.011** |
+
+## Paper
+
+The full write-up, submitted as the URSS 2026 final output, is
+[`paper/Lessan_URSS_2026_Option_Implied_Entropy.pdf`](paper/Lessan_URSS_2026_Option_Implied_Entropy.pdf).
+
+The project used an AI assistant, Claude (Anthropic), for most of the code
+and the first draft of the paper. The paper's acknowledgements set out who
+did what.
 
 ## Repository map
 
